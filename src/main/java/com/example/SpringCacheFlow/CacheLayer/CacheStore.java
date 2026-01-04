@@ -2,13 +2,17 @@ package com.example.SpringCacheFlow.CacheLayer;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 @Component
 public class CacheStore {
-    int cacheLimit = 100;  // cache can only hold 100 entries (key → product) at a time.”
-    private static final long TTL = 30000; // 30 SECOND
+    int cacheLimit = 10;  // cache can only hold 10 entries (key → product) at a time.”
+    private static final long TTL = 20000; // 20 SECOND
 
     // make a LRU(Doubly LL)
     public class Node{
@@ -83,7 +87,6 @@ public class CacheStore {
     }
 
 
-
     // Implementing getCacheEntry by key
     public Node getEntry(int key){
         if(!map.containsKey(key)) return null;  // cache miss
@@ -103,4 +106,41 @@ public class CacheStore {
         return getCacheEntry;
     }
 
+
+    // Implementing Spring Scheduler
+    @Scheduled(fixedRate = 10000) // scan every 10 seconds
+    public synchronized void cleanUpExpiredEntries(){
+        System.out.println("Scheduler running.... checking for expired entries ");
+
+        // Approach : 1
+//        // now scan over hashmap bcz map contains node and inside node there is cache-entry
+//        for(Node node:map.values()){
+//            if(node.getCacheEntry().isExpired()){
+//                System.out.println("Evicting the expired entries with key" + node.getKey());
+//
+//                // now remove from DLL and from HashMap also
+//                deleteNode(node);
+//                map.remove(node.key);
+//            }
+//        }
+        // in appraoch 1 , i'm iterating over map.values and (line 114) and at the same time i'm also doing modification
+                    // in map(map.remove.... line 120) , so this will cause ConcurrentModificationException bcz ..
+                 ///  --> Java collections do not allow structural modification while iterating using for-each.
+
+
+        // Appproach-2 using Iterator
+        Iterator<Map.Entry<Integer,Node>>iterator = map.entrySet().iterator();
+        while(iterator.hasNext()){
+         Map.Entry<Integer,Node>nodeEntry = iterator.next();
+         Node node = nodeEntry.getValue();
+
+              if(node.getCacheEntry().isExpired()){
+                  System.out.println("Evicting the expired entries with key" + node.getKey());
+
+                  // now delete from DLL & HashMap also
+                  deleteNode(node);
+                  iterator.remove();
+              }
+        }
+    }
 }

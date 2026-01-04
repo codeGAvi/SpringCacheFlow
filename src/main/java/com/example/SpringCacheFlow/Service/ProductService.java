@@ -7,7 +7,7 @@ import com.example.SpringCacheFlow.CacheLayer.CacheStore;
 import com.example.SpringCacheFlow.Entity.Product;
 import com.example.SpringCacheFlow.Exception.ProductNotFoundException;
 import com.example.SpringCacheFlow.Repository.ProductRepository;
-import com.example.SpringCacheFlow.dto.Request.ProductRequest;
+import com.example.SpringCacheFlow.dto.Request.ProductRequestDto;
 import com.example.SpringCacheFlow.dto.Response.ProductResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,13 +27,13 @@ public class ProductService {
     ProductRepository productRepository;
 
 
-    public  ProductResponse addProduct(ProductRequest productRequest) {
+    public  ProductResponse addProduct(ProductRequestDto productRequestDto) {
 
         // dto to entity
         Product product = new Product();
-        product.setName(productRequest.getName());
-        product.setPrice(productRequest.getPrice());
-        product.setCategory(productRequest.getCategory());
+        product.setName(productRequestDto.getName());
+        product.setPrice(productRequestDto.getPrice());
+        product.setCategory(productRequestDto.getCategory());
 
         // save product in database
         Product savedProduct = productRepository.save(product);
@@ -51,14 +51,12 @@ public class ProductService {
 
 
 
-
-
     public Product getProductsById(int id){
        // call cache with id(key) if present in cache then return
      CacheStore.Node cacheNode  = cacheStore.getEntry(id);
        if(cacheNode != null){  // if this will return null then below code will execute
            System.out.println("Cache hit for product_id: " + id);
-           return cacheNode.getCacheEntry().getProduct();   // returns from in-memory Hashmap
+           return cacheNode.getCacheEntry().getProduct();   // returns from "in-memory" Hashmap
        }
        System.out.println("Cache missed for product_id: " + id + " fetching from database....");
 
